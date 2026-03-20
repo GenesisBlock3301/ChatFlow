@@ -1,10 +1,13 @@
-import { Moon, Zap, Code, Sparkles, Bug } from 'lucide-react'
+import { Moon, Zap, Code, Sparkles, Bug, Sun } from 'lucide-react'
+import { useTheme } from 'next-themes'
+import { useEffect, useRef } from 'react'
 
 interface MoreSubmenuItem {
   id: string
   icon?: React.ElementType
   label?: string
   divider?: boolean
+  onClick?: () => void
 }
 
 interface MoreSubmenuProps {
@@ -14,20 +17,39 @@ interface MoreSubmenuProps {
   anchorRect?: DOMRect | null
 }
 
-const moreMenuItems: MoreSubmenuItem[] = [
-  { id: 'dark-mode', icon: Moon, label: 'Disable Dark Mode' },
-  { id: 'animations', icon: Zap, label: 'Disable Animations' },
-  { id: 'divider-1', divider: true },
-  { id: 'switch-version', icon: Code, label: 'Switch to A version' },
-  { id: 'features', icon: Sparkles, label: 'Telegram Features' },
-  { id: 'report-bug', icon: Bug, label: 'Report Bug' },
-]
-
 export function MoreSubmenu({ isOpen, onClose, onItemClick, anchorRect }: Readonly<MoreSubmenuProps>) {
+  const { theme, setTheme } = useTheme()
+  const mountedRef = useRef(false)
+
+  // Flip the ref to true once after the first paint.
+  // No setState → no extra render → no ESLint warning.
+  useEffect(() => {
+    mountedRef.current = true
+  }, [])
+
   if (!isOpen) return null
 
-  const handleItemClick = (label: string) => {
-    onItemClick(label)
+  const toggleDarkMode = () => {
+    setTheme(theme === 'dark' ? 'light' : 'dark')
+  }
+
+  const moreMenuItems: MoreSubmenuItem[] = [
+    {
+      id: 'dark-mode',
+      icon: mountedRef.current && theme === 'dark' ? Sun : Moon,
+      label: mountedRef.current && theme === 'dark' ? 'Disable Dark Mode' : 'Enable Dark Mode',
+      onClick: toggleDarkMode,
+    },
+    { id: 'animations', icon: Zap, label: 'Disable Animations' },
+    { id: 'divider-1', divider: true },
+    { id: 'switch-version', icon: Code, label: 'Switch to A version' },
+    { id: 'features', icon: Sparkles, label: 'Telegram Features' },
+    { id: 'report-bug', icon: Bug, label: 'Report Bug' },
+  ]
+
+  const handleItemClick = (item: MoreSubmenuItem) => {
+    item.onClick?.()
+    if (item.label) onItemClick(item.label)
     onClose()
   }
 
@@ -42,8 +64,8 @@ export function MoreSubmenu({ isOpen, onClose, onItemClick, anchorRect }: Readon
         return (
           <button
             key={item.id}
-            className="flex items-center w-full px-4 py-3 text-gray-700 hover:bg-gray-50 focus:outline-none focus:bg-gray-100"
-            onClick={() => handleItemClick(item.label!)}
+            className="flex items-center w-full px-4 py-3 text-gray-700 hover:bg-gray-50 focus:outline-none focus:bg-gray-100 transition-colors"
+            onClick={() => handleItemClick(item)}
           >
             {IconComponent && <IconComponent className="w-5 h-5 mr-3 text-gray-600" />}
             <span className="flex-1 text-left">{item.label}</span>
